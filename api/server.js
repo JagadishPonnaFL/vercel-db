@@ -1,17 +1,8 @@
-// Importing required modules
-const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
-const app = express();
-const port = process.env.PORT || 3002;
 
-// Middleware to parse JSON body
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Define file path for XLS
-const xlsFilePath = path.join(__dirname, 'data.xls');
+const xlsFilePath = path.join(__dirname, '../data.xls');
 
 // Function to read XLS file
 const readXlsFile = () => {
@@ -32,41 +23,41 @@ const writeXlsFile = (data) => {
   xlsx.writeFile(wb, xlsFilePath);
 };
 
-// Endpoint to get data from XLS file
-app.get('/get-xls-data', (req, res) => {
-  const data = readXlsFile();
-  res.json({ data });
-});
+module.exports = async (req, res) => {
+  const { method } = req;
 
-// Endpoint to save data to XLS file
-app.post('/save-xls-data', (req, res) => {
-  const { data } = req.body;
-  if (Array.isArray(data)) {
-    writeXlsFile(data);
-    res.json({ message: 'Data saved to XLS file successfully' });
-  } else {
-    res.status(400).json({ error: 'Data should be an array' });
+  if (method === 'GET' && req.url === '/get-xls-data') {
+    const data = readXlsFile();
+    res.status(200).json({ data });
   }
-});
 
-// Endpoint to update data in XLS file
-app.post('/update-xls-data', (req, res) => {
-  const { rowIndex, newData } = req.body;
-  if (typeof rowIndex !== 'undefined' && newData) {
-    let data = readXlsFile();
-    if (rowIndex < data.length) {
-      data[rowIndex] = { ...data[rowIndex], ...newData };
+  else if (method === 'POST' && req.url === '/save-xls-data') {
+    const { data } = req.body;
+    if (Array.isArray(data)) {
       writeXlsFile(data);
-      res.json({ message: 'Data updated successfully' });
+      res.status(200).json({ message: 'Data saved to XLS file successfully' });
     } else {
-      res.status(400).json({ error: 'Row index out of bounds' });
+      res.status(400).json({ error: 'Data should be an array' });
     }
-  } else {
-    res.status(400).json({ error: 'Invalid input' });
   }
-});
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+  else if (method === 'POST' && req.url === '/update-xls-data') {
+    const { rowIndex, newData } = req.body;
+    if (typeof rowIndex !== 'undefined' && newData) {
+      let data = readXlsFile();
+      if (rowIndex < data.length) {
+        data[rowIndex] = { ...data[rowIndex], ...newData };
+        writeXlsFile(data);
+        res.status(200).json({ message: 'Data updated successfully' });
+      } else {
+        res.status(400).json({ error: 'Row index out of bounds' });
+      }
+    } else {
+      res.status(400).json({ error: 'Invalid input' });
+    }
+  }
+
+  else {
+    res.status(404).json({ error: 'Not Found' });
+  }
+};
