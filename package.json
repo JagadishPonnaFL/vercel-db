@@ -2,6 +2,9 @@
   "name": "xls-serverless",
   "version": "1.0.0",
   "main": "api/server.js",
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev"
